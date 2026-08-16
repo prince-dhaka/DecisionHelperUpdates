@@ -1,0 +1,12 @@
+node_modules/
+__pycache__/
+*.exe
+*.apk
+*.idsig
+*.txt
+!whats_new.txt
+!version.txt
+!release_notes.txt
+diagnostic_logs.txt
+stderr.txt
+stdout.txt
