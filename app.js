@@ -2567,14 +2567,62 @@ function setupEventListeners() {
                 if (updateModal) updateModal.classList.add('hidden');
             });
         }
+        // Setup global callbacks for native Android updater progress & errors
+        window.onUpdateProgress = function(percent, downloaded, total) {
+            if (updateNowBtn) {
+                if (percent >= 0) {
+                    const dlMb = (downloaded / (1024 * 1024)).toFixed(2);
+                    const totMb = (total / (1024 * 1024)).toFixed(2);
+                    updateNowBtn.innerText = `Downloading ${percent}% (${dlMb}/${totMb} MB)...`;
+                } else {
+                    const dlMb = (downloaded / (1024 * 1024)).toFixed(2);
+                    updateNowBtn.innerText = `Downloading (${dlMb} MB)...`;
+                }
+            }
+            if (percent === 25 || percent === 50 || percent === 75 || percent === 90) {
+                showToast(`Downloading update: ${percent}%`);
+            }
+        };
+
+        window.onUpdateComplete = function() {
+            if (updateNowBtn) {
+                updateNowBtn.innerText = "Opening installer...";
+            }
+            showToast("Download complete. Opening installation screen...");
+            setTimeout(() => {
+                if (updateModal) updateModal.classList.add('hidden');
+                if (updateNowBtn) {
+                    updateNowBtn.disabled = false;
+                    updateNowBtn.innerText = "Update Now";
+                }
+            }, 1800);
+        };
+
+        window.onUpdateError = function(errorMsg) {
+            if (updateNowBtn) {
+                updateNowBtn.disabled = false;
+                updateNowBtn.innerText = "Retry Update";
+            }
+            showToast("Update error: " + errorMsg);
+            console.error("Update error:", errorMsg);
+        };
+
         if (updateNowBtn) {
             updateNowBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                if (updateModal) updateModal.classList.add('hidden');
                 const downloadUrl = updateNowBtn.getAttribute('data-url');
                 if (downloadUrl) {
-                    showToast("Downloading update...");
-                    window.AndroidUpdater.triggerUpdate(downloadUrl);
+                    updateNowBtn.disabled = true;
+                    updateNowBtn.innerText = "Connecting...";
+                    showToast("Connecting to update server...");
+                    if (window.AndroidUpdater && window.AndroidUpdater.triggerUpdate) {
+                        window.AndroidUpdater.triggerUpdate(downloadUrl);
+                    } else {
+                        window.open(downloadUrl, '_blank');
+                        if (updateModal) updateModal.classList.add('hidden');
+                        updateNowBtn.disabled = false;
+                        updateNowBtn.innerText = "Update Now";
+                    }
                 }
             });
         }

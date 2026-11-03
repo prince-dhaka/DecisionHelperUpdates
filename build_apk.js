@@ -62,24 +62,29 @@ const mainActivityJava = `package com.decision.helper.pro;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.Build;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.webkit.JavascriptInterface;
 import android.view.Window;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.net.Uri;
-import android.os.Environment;
 import android.os.AsyncTask;
+import android.provider.Settings;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.List;
 
 public class MainActivity extends Activity {
     private WebView webView;
     private int CURRENT_VERSION = ${versionCode};
+    private File pendingApkFile = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -129,6 +134,18 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        if (pendingApkFile != null && pendingApkFile.exists()) {
+            if (Build.VERSION.SDK_INT < 26 || getPackageManager().canRequestPackageInstalls()) {
+                File apkToInstall = pendingApkFile;
+                pendingApkFile = null;
+                promptInstall(apkToInstall);
+            }
+        }
+    }
+
+    @Override
     public void onBackPressed() {
         if (webView != null && webView.canGoBack()) {
             webView.goBack();
@@ -137,6 +154,84 @@ public class MainActivity extends Activity {
         } else {
             super.onBackPressed();
         }
+    }
+
+    private void promptInstall(final File apkFile) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    if (Build.VERSION.SDK_INT >= 26) {
+                        if (!getPackageManager().canRequestPackageInstalls()) {
+                            pendingApkFile = apkFile;
+                            webView.loadUrl("javascript:showToast('Please allow Install Unknown Apps for Decision Helper');");
+                            Intent grantIntent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES);
+                            grantIntent.setData(Uri.parse("package:" + getPackageName()));
+                            grantIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            startActivity(grantIntent);
+                            return;
+                        }
+                    }
+
+                    Uri apkUri = Uri.parse("content://com.decision.helper.pro.fileprovider/" + apkFile.getName());
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                    intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+                    List<ResolveInfo> resolveInfoList = getPackageManager().queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
+                    if (resolveInfoList != null && !resolveInfoList.isEmpty()) {
+                        for (ResolveInfo resolveInfo : resolveInfoList) {
+                            String packageName = resolveInfo.activityInfo.packageName;
+                            grantUriPermission(packageName, apkUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        }
+                    } else {
+                        grantUriPermission("com.google.android.packageinstaller", apkUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        grantUriPermission("com.android.packageinstaller", apkUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    }
+
+                    startActivity(intent);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    sendUpdateError("Failed to launch package installer: " + e.getMessage());
+                }
+            }
+        });
+    }
+
+    private void sendUpdateProgress(final int percent, final long downloaded, final long total) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (webView != null) {
+                    webView.loadUrl("javascript:if(window.onUpdateProgress){window.onUpdateProgress(" + percent + "," + downloaded + "," + total + ");}");
+                }
+            }
+        });
+    }
+
+    private void sendUpdateComplete() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (webView != null) {
+                    webView.loadUrl("javascript:if(window.onUpdateComplete){window.onUpdateComplete();}");
+                }
+            }
+        });
+    }
+
+    private void sendUpdateError(final String errorMsg) {
+        final String safeMsg = errorMsg.replace("'", "\\\\'").replace("\\n", " ");
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (webView != null) {
+                    webView.loadUrl("javascript:if(window.onUpdateError){window.onUpdateError('" + safeMsg + "');}else{showToast('Update error: " + safeMsg + "');}");
+                }
+            }
+        });
     }
 
     class UpdaterInterface {
@@ -150,11 +245,44 @@ public class MainActivity extends Activity {
             AsyncTask.execute(new Runnable() {
                 @Override
                 public void run() {
+                    HttpURLConnection conn = null;
+                    InputStream is = null;
+                    FileOutputStream fos = null;
                     try {
-                        URL url = new URL(downloadUrl);
-                        HttpURLConnection c = (HttpURLConnection) url.openConnection();
-                        c.setRequestMethod("GET");
-                        c.connect();
+                        sendUpdateProgress(0, 0, 0);
+
+                        String targetUrl = downloadUrl;
+                        int redirectCount = 0;
+                        while (redirectCount < 10) {
+                            URL url = new URL(targetUrl);
+                            conn = (HttpURLConnection) url.openConnection();
+                            conn.setInstanceFollowRedirects(true);
+                            conn.setRequestProperty("User-Agent", "DecisionHelper-Updater");
+                            conn.setConnectTimeout(25000);
+                            conn.setReadTimeout(30000);
+                            conn.connect();
+
+                            int code = conn.getResponseCode();
+                            if (code == HttpURLConnection.HTTP_MOVED_TEMP || 
+                                code == HttpURLConnection.HTTP_MOVED_PERM || 
+                                code == 307 || code == 308) {
+                                String redirectUrl = conn.getHeaderField("Location");
+                                conn.disconnect();
+                                if (redirectUrl == null || redirectUrl.isEmpty()) {
+                                    throw new Exception("Received redirect status " + code + " without Location header.");
+                                }
+                                targetUrl = redirectUrl;
+                                redirectCount++;
+                                continue;
+                            }
+                            if (code != HttpURLConnection.HTTP_OK) {
+                                throw new Exception("HTTP server error " + code + ": " + conn.getResponseMessage());
+                            }
+                            break;
+                        }
+
+                        int totalBytes = conn.getContentLength();
+                        is = conn.getInputStream();
 
                         File filesDir = getExternalFilesDir(null);
                         if (filesDir == null) {
@@ -168,26 +296,51 @@ public class MainActivity extends Activity {
                             apkFile.delete();
                         }
 
-                        FileOutputStream fos = new FileOutputStream(apkFile);
-                        InputStream is = c.getInputStream();
+                        fos = new FileOutputStream(apkFile);
+                        byte[] buffer = new byte[8192];
+                        int downloaded = 0;
+                        int readBytes = 0;
+                        long lastReportTime = 0;
 
-                        byte[] buffer = new byte[1024];
-                        int len1 = 0;
-                        while ((len1 = is.read(buffer)) != -1) {
-                            fos.write(buffer, 0, len1);
+                        while ((readBytes = is.read(buffer)) != -1) {
+                            fos.write(buffer, 0, readBytes);
+                            downloaded += readBytes;
+                            long now = System.currentTimeMillis();
+                            if (now - lastReportTime > 200 || downloaded == totalBytes) {
+                                lastReportTime = now;
+                                int percent = totalBytes > 0 ? (int)((downloaded * 100L) / totalBytes) : -1;
+                                sendUpdateProgress(percent, downloaded, totalBytes);
+                            }
                         }
+                        fos.flush();
                         fos.close();
+                        fos = null;
                         is.close();
+                        is = null;
+                        conn.disconnect();
+                        conn = null;
 
-                        Uri apkUri = Uri.parse("content://com.decision.helper.pro.fileprovider/DecisionHelper_Update.apk");
-                        Intent intent = new Intent(Intent.ACTION_VIEW);
-                        intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
-                        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        startActivity(intent);
+                        if (!apkFile.exists() || apkFile.length() == 0) {
+                            throw new Exception("Downloaded APK is empty.");
+                        }
 
-                    } catch (Exception e) {
+                        if (totalBytes > 0 && apkFile.length() < totalBytes) {
+                            throw new Exception("APK download incomplete: " + apkFile.length() + " of " + totalBytes + " bytes.");
+                        }
+
+                        apkFile.setReadable(true, false);
+
+                        sendUpdateComplete();
+
+                        promptInstall(apkFile);
+
+                    } catch (final Exception e) {
                         e.printStackTrace();
+                        sendUpdateError(e.getMessage() != null ? e.getMessage() : e.toString());
+                    } finally {
+                        try { if (fos != null) fos.close(); } catch (Exception ignored) {}
+                        try { if (is != null) is.close(); } catch (Exception ignored) {}
+                        try { if (conn != null) conn.disconnect(); } catch (Exception ignored) {}
                     }
                 }
             });
@@ -208,6 +361,7 @@ const genericFileProviderJava = `package com.decision.helper.pro;
 import android.content.ContentProvider;
 import android.content.ContentValues;
 import android.database.Cursor;
+import android.database.MatrixCursor;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
 import java.io.File;
@@ -219,9 +373,46 @@ public class GenericFileProvider extends ContentProvider {
         return true;
     }
 
+    private File getFileForUri(Uri uri) throws FileNotFoundException {
+        String fileName = uri.getLastPathSegment();
+        if (fileName == null || fileName.isEmpty()) {
+            throw new FileNotFoundException("Invalid URI: " + uri);
+        }
+        File baseDir = getContext().getExternalFilesDir(null);
+        File file = baseDir != null ? new File(baseDir, fileName) : null;
+        if (file == null || !file.exists()) {
+            file = new File(getContext().getFilesDir(), fileName);
+        }
+        if (!file.exists()) {
+            throw new FileNotFoundException("File not found: " + fileName);
+        }
+        return file;
+    }
+
     @Override
     public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
-        return null;
+        try {
+            File file = getFileForUri(uri);
+            if (projection == null) {
+                projection = new String[] { "_display_name", "_size" };
+            }
+            MatrixCursor cursor = new MatrixCursor(projection, 1);
+            Object[] row = new Object[projection.length];
+            for (int i = 0; i < projection.length; i++) {
+                String col = projection[i];
+                if ("_display_name".equals(col)) {
+                    row[i] = file.getName();
+                } else if ("_size".equals(col)) {
+                    row[i] = file.length();
+                } else {
+                    row[i] = null;
+                }
+            }
+            cursor.addRow(row);
+            return cursor;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     @Override
@@ -246,7 +437,7 @@ public class GenericFileProvider extends ContentProvider {
 
     @Override
     public ParcelFileDescriptor openFile(Uri uri, String mode) throws FileNotFoundException {
-        File file = new File(getContext().getExternalFilesDir(null), uri.getPath());
+        File file = getFileForUri(uri);
         return ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY);
     }
 }
