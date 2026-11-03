@@ -1424,13 +1424,32 @@ async function handlePasswordSubmit() {
     }
 }
 
+function triggerLockShake() {
+    const card = document.getElementById('lockWorkspaceCard');
+    if (card) {
+        card.classList.remove('lock-shake');
+        void card.offsetWidth; // force browser reflow to restart animation
+        card.classList.add('lock-shake');
+        setTimeout(() => {
+            card.classList.remove('lock-shake');
+        }, 500);
+    }
+}
+
 async function unlockWorkspace() {
     const dec = getActiveDecision();
     if (!dec) return;
     
     const pw = workspacePasswordInput.value.trim();
+    if (!pw) {
+        workspaceUnlockError.innerText = 'Please enter your password.';
+        workspaceUnlockError.classList.remove('hidden');
+        triggerLockShake();
+        workspacePasswordInput.focus();
+        return;
+    }
+
     const hashed = await hashPassword(pw);
-    
     const masterPin = localStorage.getItem('master_vault_pin') || '1234';
     const decoyPin = localStorage.getItem('decoy_vault_pin') || '0000';
     
@@ -1443,7 +1462,9 @@ async function unlockWorkspace() {
         renderFooter();
         loadChatForActiveDecision();
     } else {
+        workspaceUnlockError.innerText = 'Incorrect password. Please try again.';
         workspaceUnlockError.classList.remove('hidden');
+        triggerLockShake();
         workspacePasswordInput.value = '';
         workspacePasswordInput.focus();
     }
@@ -2104,6 +2125,32 @@ function setupEventListeners() {
                 e.preventDefault();
                 unlockWorkspace();
             }
+        });
+    }
+
+    const toggleWorkspacePasswordBtn = document.getElementById('toggleWorkspacePasswordBtn');
+    const eyeIconShow = document.getElementById('eyeIconShow');
+    const eyeIconHide = document.getElementById('eyeIconHide');
+    if (toggleWorkspacePasswordBtn && workspacePasswordInput) {
+        toggleWorkspacePasswordBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const isPassword = workspacePasswordInput.type === 'password';
+            workspacePasswordInput.type = isPassword ? 'text' : 'password';
+            if (eyeIconShow && eyeIconHide) {
+                eyeIconShow.classList.toggle('hidden', isPassword);
+                eyeIconHide.classList.toggle('hidden', !isPassword);
+            }
+            workspacePasswordInput.focus();
+        });
+    }
+
+    const cancelWorkspaceUnlockBtn = document.getElementById('cancelWorkspaceUnlockBtn');
+    if (cancelWorkspaceUnlockBtn) {
+        cancelWorkspaceUnlockBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            renderHomeView();
         });
     }
 
@@ -3605,6 +3652,8 @@ function renderApp() {
     
     const scoreEl = document.getElementById('netBalanceScore');
     const chatBtn = document.getElementById('floatingChatBtn');
+    const mobileTabsEl = document.getElementById('mobileTabs');
+    const horizonFilterEl = document.getElementById('horizonFilterRow');
     
     if (isLocked) {
         if (lockWorkspaceOverlay) { 
@@ -3613,25 +3662,33 @@ function renderApp() {
         }
         if (splitColumns) { splitColumns.classList.add('hidden'); splitColumns.style.display = 'none'; }
         if (scoreEl) { scoreEl.classList.add('hidden'); scoreEl.style.display = 'none'; }
+        if (mobileTabsEl) { mobileTabsEl.classList.add('hidden'); mobileTabsEl.style.display = 'none'; }
+        if (horizonFilterEl) { horizonFilterEl.classList.add('hidden'); horizonFilterEl.style.display = 'none'; }
         if (aiSuggestBtn) { aiSuggestBtn.classList.remove('visible'); aiSuggestBtn.style.display = 'none'; }
         if (chatBtn) { chatBtn.classList.add('hidden'); chatBtn.style.display = 'none'; }
         if (aiChatPanel) { aiChatPanel.classList.remove('open'); }
         
-        topicInput.value = '🔒 Locked Decision';
-        topicInput.disabled = true;
+        if (topicInput) {
+            topicInput.style.display = 'none';
+        }
         workspacePasswordInput.value = '';
         workspaceUnlockError.classList.add('hidden');
         if (advantagesList) advantagesList.innerHTML = '';
         if (disadvantagesList) disadvantagesList.innerHTML = '';
         renderFooter();
+        setTimeout(() => {
+            if (workspacePasswordInput) workspacePasswordInput.focus();
+        }, 120);
     } else {
         if (lockWorkspaceOverlay) { lockWorkspaceOverlay.classList.add('hidden'); lockWorkspaceOverlay.style.display = 'none'; }
         if (splitColumns) { splitColumns.classList.remove('hidden'); splitColumns.style.display = 'grid'; }
         if (scoreEl) { scoreEl.style.display = ''; }
+        if (mobileTabsEl) { mobileTabsEl.classList.remove('hidden'); mobileTabsEl.style.display = ''; }
         if (chatBtn) { chatBtn.classList.remove('hidden'); chatBtn.style.display = 'flex'; }
         if (aiSuggestBtn) { aiSuggestBtn.style.display = ''; }
         
         if (topicInput) {
+            topicInput.style.display = '';
             topicInput.disabled = false;
             topicInput.value = dec.topic || '';
             adjustTopicFontSizeAndHeight();
