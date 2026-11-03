@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const https = require('https');
 const { execSync } = require('child_process');
 
 const appDir = __dirname;
@@ -352,3 +353,176 @@ console.log(`Output: ${outputApk}`);
 console.log(`Size: ${apkSizeMb} MB (${apkStats.size} bytes)`);
 console.log(`Version: 1.${versionCode}`);
 console.log(`==============================================\n`);
+
+// 14. Automated GitHub Release & Gist OTA Update
+async function publishOtaUpdate() {
+    const secretsPath = path.join(appDir, 'secrets.json');
+    if (!fs.existsSync(secretsPath)) {
+        console.log('[Updater] secrets.json not found, skipping OTA publishing.');
+        return;
+    }
+    const secrets = JSON.parse(fs.readFileSync(secretsPath, 'utf8'));
+    const token = secrets.github_token;
+    const gistId = secrets.gist_id;
+    const username = secrets.github_username;
+    const repo = secrets.github_repository;
+
+    if (!token || !gistId || !username || !repo) {
+        console.log('[Updater] Missing GitHub credentials in secrets.json.');
+        return;
+    }
+
+    console.log(`\n[Updater] Initiating automated release & Gist OTA update for Version 1.${versionCode}...`);
+
+    const request = (options, postData) => new Promise((resolve, reject) => {
+        const req = https.request(options, (res) => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+                try {
+                    resolve({ statusCode: res.statusCode, headers: res.headers, body: JSON.parse(data) });
+                } catch {
+                    resolve({ statusCode: res.statusCode, headers: res.headers, body: data });
+                }
+            });
+        });
+        req.on('error', reject);
+        if (postData) req.write(postData);
+        req.end();
+    });
+
+    let release;
+    const releasePayload = JSON.stringify({
+        tag_name: `v1.${versionCode}`,
+        name: `Release 1.${versionCode}`,
+        body: `Automated OTA release for Version 1.${versionCode}.\n\nFeatures:\n- Refined mobile layout & typography\n- Simple, Useful, Premium design polish\n- Lock security & chat persistence`,
+        draft: false,
+        prerelease: false
+    });
+
+    try {
+        const createRelRes = await request({
+            hostname: 'api.github.com',
+            path: `/repos/${username}/${repo}/releases`,
+            method: 'POST',
+            headers: {
+                'Authorization': `token ${token}`,
+                'User-Agent': 'DecisionHelper-BuildPipeline',
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(releasePayload)
+            }
+        }, releasePayload);
+
+        if (createRelRes.statusCode === 201) {
+            release = createRelRes.body;
+            console.log(`[Updater] GitHub Release created: ${release.html_url}`);
+        } else {
+            const getRelRes = await request({
+                hostname: 'api.github.com',
+                path: `/repos/${username}/${repo}/releases/tags/v1.${versionCode}`,
+                method: 'GET',
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'User-Agent': 'DecisionHelper-BuildPipeline'
+                }
+            });
+            release = getRelRes.body;
+            console.log(`[Updater] Using existing release: ${release.html_url}`);
+        }
+
+        if (release && release.upload_url) {
+            const uploadBase = release.upload_url.split('{')[0];
+            const apkBuffer = fs.readFileSync(outputApk);
+            const urlObj = new URL(`${uploadBase}?name=DecisionHelper.apk`);
+
+            if (release.assets && release.assets.length > 0) {
+                for (const asset of release.assets) {
+                    if (asset.name === 'DecisionHelper.apk') {
+                        console.log(`[Updater] Deleting older asset id ${asset.id}...`);
+                        await request({
+                            hostname: 'api.github.com',
+                            path: `/repos/${username}/${repo}/releases/assets/${asset.id}`,
+                            method: 'DELETE',
+                            headers: {
+                                'Authorization': `token ${token}`,
+                                'User-Agent': 'DecisionHelper-BuildPipeline'
+                            }
+                        });
+                    }
+                }
+            }
+
+            console.log('[Updater] Uploading APK asset...');
+            const uploadRes = await new Promise((resolve, reject) => {
+                const upReq = https.request({
+                    hostname: urlObj.hostname,
+                    path: urlObj.pathname + urlObj.search,
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'User-Agent': 'DecisionHelper-BuildPipeline',
+                        'Content-Type': 'application/vnd.android.package-archive',
+                        'Content-Length': apkBuffer.length
+                    }
+                }, (res) => {
+                    let data = '';
+                    res.on('data', chunk => data += chunk);
+                    res.on('end', () => resolve({ statusCode: res.statusCode, body: data }));
+                });
+                upReq.on('error', reject);
+                upReq.write(apkBuffer);
+                upReq.end();
+            });
+
+            console.log(`[Updater] APK asset upload status: ${uploadRes.statusCode}`);
+        }
+
+        const apkDownloadUrl = `https://github.com/${username}/${repo}/releases/download/v1.${versionCode}/DecisionHelper.apk`;
+
+        const whatsNewList = [
+            "Fixed mobile title text wrapping and multi-line breaks",
+            "Clean mobile header hierarchy and balanced spacing",
+            "Floating AI chat bubble repositioned above bottom footer",
+            "Unified Advantages and Disadvantages terminology across tabs",
+            "Persistent chat history and secured locked private vault"
+        ];
+
+        const gistPayload = JSON.stringify({
+            files: {
+                "gistfile1.txt": {
+                    content: JSON.stringify({
+                        versionCode: versionCode,
+                        versionName: `1.${versionCode}`,
+                        fileSize: `${apkSizeMb} MB`,
+                        whatsNew: whatsNewList,
+                        apkUrl: apkDownloadUrl
+                    }, null, 4)
+                }
+            }
+        });
+
+        console.log('[Updater] Updating Gist bulletin for in-app OTA notifications...');
+        const gistRes = await request({
+            hostname: 'api.github.com',
+            path: `/gists/${gistId}`,
+            method: 'PATCH',
+            headers: {
+                'Authorization': `token ${token}`,
+                'User-Agent': 'DecisionHelper-BuildPipeline',
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(gistPayload)
+            }
+        }, gistPayload);
+
+        if (gistRes.statusCode === 200) {
+            console.log('[Updater] SUCCESS! Gist bulletin updated. OTA update is now LIVE globally!');
+        } else {
+            console.log(`[Updater] Gist update response status: ${gistRes.statusCode}`);
+        }
+    } catch (err) {
+        console.error('[Updater] Error publishing OTA release:', err);
+    }
+}
+
+publishOtaUpdate();
+

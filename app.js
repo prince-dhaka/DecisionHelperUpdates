@@ -3713,8 +3713,8 @@ function renderList(type) {
                 if (isDecisionEmpty(activeDec)) {
                     if (thisHeaderEl) thisHeaderEl.innerText = type === 'pro' ? 'Advantages' : 'Disadvantages';
                     if (oppositeHeaderEl) oppositeHeaderEl.innerText = oppositeType === 'pro' ? 'Advantages' : 'Disadvantages';
-                    if (tabAdvantagesBtn) tabAdvantagesBtn.innerText = 'Pros (0)';
-                    if (tabDisadvantagesBtn) tabDisadvantagesBtn.innerText = 'Cons (0)';
+                    if (tabAdvantagesBtn) tabAdvantagesBtn.innerText = 'Advantages (0)';
+                    if (tabDisadvantagesBtn) tabDisadvantagesBtn.innerText = 'Disadvantages (0)';
                 } else {
                     const thisCount = arr.filter(item => getItemText(item).trim() !== '').length;
                     if (thisHeaderEl) thisHeaderEl.innerText = type === 'pro' ? `Advantages (${thisCount})` : `Disadvantages (${thisCount})`;
@@ -3724,11 +3724,11 @@ function renderList(type) {
                     if (oppositeHeaderEl) oppositeHeaderEl.innerText = oppositeType === 'pro' ? `Advantages (${oppositeCount})` : `Disadvantages (${oppositeCount})`;
                     
                     if (type === 'pro') {
-                        if (tabAdvantagesBtn) tabAdvantagesBtn.innerText = `Pros (${thisCount})`;
-                        if (tabDisadvantagesBtn) tabDisadvantagesBtn.innerText = `Cons (${oppositeCount})`;
+                        if (tabAdvantagesBtn) tabAdvantagesBtn.innerText = `Advantages (${thisCount})`;
+                        if (tabDisadvantagesBtn) tabDisadvantagesBtn.innerText = `Disadvantages (${oppositeCount})`;
                     } else {
-                        if (tabAdvantagesBtn) tabAdvantagesBtn.innerText = `Pros (${oppositeCount})`;
-                        if (tabDisadvantagesBtn) tabDisadvantagesBtn.innerText = `Cons (${thisCount})`;
+                        if (tabAdvantagesBtn) tabAdvantagesBtn.innerText = `Advantages (${oppositeCount})`;
+                        if (tabDisadvantagesBtn) tabDisadvantagesBtn.innerText = `Disadvantages (${thisCount})`;
                     }
                 }
             }
@@ -4053,9 +4053,9 @@ function renderList(type) {
             headerEl.innerText = count > 0 ? `${type === 'pro' ? 'Advantages' : 'Disadvantages'} (${count})` : (type === 'pro' ? 'Advantages' : 'Disadvantages');
         }
         if (type === 'pro') {
-            if (tabAdvantagesBtn) tabAdvantagesBtn.innerText = `Pros (${count})`;
+            if (tabAdvantagesBtn) tabAdvantagesBtn.innerText = `Advantages (${count})`;
         } else {
-            if (tabDisadvantagesBtn) tabDisadvantagesBtn.innerText = `Cons (${count})`;
+            if (tabDisadvantagesBtn) tabDisadvantagesBtn.innerText = `Disadvantages (${count})`;
         }
     }
 }

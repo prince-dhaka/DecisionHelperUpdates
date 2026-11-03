@@ -1802,8 +1802,19 @@ body.dark-mode .horizon-tag-btn.long {
     }
     
     #topicInput {
-        margin-top: 56px;
-        font-size: 1.8rem;
+        margin-top: 20px;
+        font-size: 1.35rem;
+        padding: 8px 16px;
+        max-width: 100%;
+        line-height: 1.35;
+        min-height: 42px;
+        word-break: normal;
+        overflow-wrap: break-word;
+    }
+
+    /* Hide redundant column header on mobile when tab is already selected */
+    #splitColumns:not(.compare-mode) .column-header {
+        display: none !important;
     }
 
     /* Sticky Mobile segmented tabs controller alignment */
@@ -2527,7 +2538,7 @@ body.warm-sepia .ai-discuss-btn {
         transform: translateX(100%);
     }
     .floating-chat-btn {
-        bottom: 16px;
+        bottom: 74px !important;
         right: 16px;
         width: 44px;
         height: 44px;
