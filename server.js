@@ -75,6 +75,7 @@ function loadStateFromDisk() {
         let pros = [];
         let cons = [];
         let passwordHash = "";
+        let chatHistory = [];
 
         try {
           const content = fs.readFileSync(decPath, 'utf8');
@@ -82,6 +83,13 @@ function loadStateFromDisk() {
           const pwMatch = content.match(/<!-- password_hash:\s*(.*?)\s*-->/);
           if (pwMatch) {
             passwordHash = pwMatch[1].trim();
+          }
+
+          const chatMatch = content.match(/<!-- chat_history:\s*(.*?)\s*-->/);
+          if (chatMatch) {
+            try {
+              chatHistory = JSON.parse(Buffer.from(chatMatch[1].trim(), 'base64').toString('utf8'));
+            } catch (e) {}
           }
 
           const advMatch = content.match(/## Advantages\r?\n([\s\S]*?)(?=\r?\n## Disadvantages|$)/);
@@ -128,7 +136,8 @@ function loadStateFromDisk() {
           topic: topic,
           pros: pros,
           cons: cons,
-          passwordHash: passwordHash
+          passwordHash: passwordHash,
+          chatHistory: chatHistory
         });
       }
     }
@@ -180,12 +189,16 @@ function validateState(state) {
   return true;
 }
 
-function writeMarkdownFile(filePath, topic, catName, pros, cons, passwordHash) {
+function writeMarkdownFile(filePath, topic, catName, pros, cons, passwordHash, chatHistory) {
   const tempPath = filePath + ".tmp";
   try {
     let content = `# Decision: ${topic} (${catName})\n`;
     if (passwordHash) {
       content += `<!-- password_hash: ${passwordHash} -->\n`;
+    }
+    if (chatHistory && Array.isArray(chatHistory) && chatHistory.length > 0) {
+      const b64Chat = Buffer.from(JSON.stringify(chatHistory)).toString('base64');
+      content += `<!-- chat_history: ${b64Chat} -->\n`;
     }
     content += `\n## Advantages\n`;
     pros.forEach((pro, i) => {
@@ -297,7 +310,7 @@ function saveStateToDisk(state) {
       const fileName = sanitizeFilename(topic) + ".md";
       const filePath = path.join(catPath, fileName);
 
-      writeMarkdownFile(filePath, topic, catName, dec.pros, dec.cons, dec.passwordHash);
+      writeMarkdownFile(filePath, topic, catName, dec.pros, dec.cons, dec.passwordHash, dec.chatHistory);
     }
   }
 }

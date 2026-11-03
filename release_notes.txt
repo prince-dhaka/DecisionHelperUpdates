@@ -1,0 +1,29 @@
+===================================================================
+DECISION HELPER - RELEASE NOTES (v2.4.0)
+===================================================================
+
+[NEW FEATURES & IMPROVEMENTS]
+1. Edit Area Full Modal Sheet:
+   - Tap "Edit / Rename" on any category pill to open the full Edit Area sheet.
+   - Customized Emoji Badges: Add emoji icons (💼, ❤️, 🏃, 💰, ✈️, 🏠, 🎯, 📚) to category pills.
+   - Decision Sorting Rules: Choose custom sorting (By Score, By Date, A-Z) per category.
+   - Bulk Decision Re-assignment: Move decisions into categories with simple checkboxes.
+
+2. WhatsApp-Style Category Context Menu & Reorder Lists Modal:
+   - Long-press / right-click category pills for Edit, Delete, or Reorder options.
+   - Reorder Lists bottom sheet with drag handles, move up/down arrows, and green Add preset pills.
+
+[BUG FIXES & PERMANENT STABILITY]
+1. Fixed Category Resurrection Bug:
+   - Deleted and renamed categories stay permanently saved across page reloads.
+
+2. Fixed Settings Dropdown Positioning:
+   - Fixed Settings gear dropdown position (`right: 16px; top: 60px; z-index: 9999`) across Home View, Workspace View, Mobile, and Desktop.
+
+3. Fixed Decision Trash Can Button:
+   - Isolated direct click handlers so clicking 🗑️ on decision cards deletes decisions without triggering card navigation.
+
+4. Un-nested Edit Area Modal:
+   - Moved Edit Area modal to top-level HTML body so it opens reliably on all browsers.
+
+===================================================================

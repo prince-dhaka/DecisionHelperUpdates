@@ -1,0 +1,9 @@
+[Added]
+- Clean Default Areas: Start fresh with empty "Career", "Relationships", and "Health" folders that you can customize, rename, or delete freely.
+- Premium Actions Bar: Added a sleek, premium bottom bar on mobile screens that responds to your touch and navigation.
+- Dedicated AI Suggestion Features: Added a float chat button (💬) for interactive chat with AI, and a point suggestion sparkles button (✨) for generating specific pros and cons points.
+
+[Fixed & Improved]
+- Privacy Lock Screen Fix: Fixed a security bug where locked decisions could leak text when scrolling. Locked folders now completely scrub and hide all Pros and Cons content from the screen.
+- Dark Mode Icon Visibility: Fixed a bug where the menu (☰) and settings (⚙) icons became black and invisible in Zen Dark mode.
+- Contrast Tweaks: Fixed the Compare tab active button style in dark mode for clean contrast.

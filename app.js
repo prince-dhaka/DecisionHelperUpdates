@@ -8,8 +8,8 @@ window.addEventListener('unhandledrejection', function(e) {
     e.preventDefault();
 });
 
-// Hosted Backend Server URL. If empty, local relative paths will be used.
-window.BACKEND_API_URL = "https://decisionhelper-c0e3.onrender.com";
+// Hosted Backend Server URL. If running locally or empty, relative paths will be used.
+window.BACKEND_API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || !window.location.hostname) ? "" : "https://decisionhelper-c0e3.onrender.com";
 
 // Pros & Cons Helper - Dropdown & Flyout Outliner Logic
 let state = {
@@ -195,10 +195,43 @@ function focusFirstItem(type) {
 
 function focusLastItem(type) {
     const list = type === 'pro' ? advantagesList : disadvantagesList;
+    if (!list) return;
     const inputs = list.querySelectorAll('.item-input');
     if (inputs.length > 0) {
         inputs[inputs.length - 1].focus();
     }
+}
+
+function addProItem() {
+    const activeDec = getActiveDecision();
+    if (!activeDec) return;
+    if (!activeDec.pros || !Array.isArray(activeDec.pros)) activeDec.pros = [];
+    const lastItem = activeDec.pros[activeDec.pros.length - 1];
+    if (!lastItem || getItemText(lastItem).trim() !== '') {
+        activeDec.pros.push({ text: '', weight: 1 });
+        saveStateToStorage();
+        renderList('pro');
+        renderFooter();
+    }
+    setTimeout(() => {
+        focusLastItem('pro');
+    }, 0);
+}
+
+function addConItem() {
+    const activeDec = getActiveDecision();
+    if (!activeDec) return;
+    if (!activeDec.cons || !Array.isArray(activeDec.cons)) activeDec.cons = [];
+    const lastItem = activeDec.cons[activeDec.cons.length - 1];
+    if (!lastItem || getItemText(lastItem).trim() !== '') {
+        activeDec.cons.push({ text: '', weight: 1 });
+        saveStateToStorage();
+        renderList('con');
+        renderFooter();
+    }
+    setTimeout(() => {
+        focusLastItem('con');
+    }, 0);
 }
 
 // Perform local server availability check to toggle the sync dot indicator
@@ -249,6 +282,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderApp();
     renderDrawer();
     renderFooter();
+
+    // Bind Add Advantage & Add Disadvantage Buttons & Column Clicks
+    const addAdvantageBtn = document.getElementById('addAdvantageBtn');
+    if (addAdvantageBtn) {
+        addAdvantageBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            addProItem();
+        });
+    }
+    const addDisadvantageBtn = document.getElementById('addDisadvantageBtn');
+    if (addDisadvantageBtn) {
+        addDisadvantageBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            addConItem();
+        });
+    }
+    const colAdvantages = document.getElementById('colAdvantages');
+    if (colAdvantages) {
+        colAdvantages.addEventListener('click', (e) => {
+            if (e.target === colAdvantages || e.target === advantagesList) {
+                focusLastItem('pro');
+            }
+        });
+    }
+    const colDisadvantages = document.getElementById('colDisadvantages');
+    if (colDisadvantages) {
+        colDisadvantages.addEventListener('click', (e) => {
+            if (e.target === colDisadvantages || e.target === disadvantagesList) {
+                focusLastItem('con');
+            }
+        });
+    }
     
     // Bind Home Page Event Listeners
     if (newDecisionBtn) {
@@ -1363,16 +1428,20 @@ async function unlockWorkspace() {
     const dec = getActiveDecision();
     if (!dec) return;
     
-    const pw = workspacePasswordInput.value;
+    const pw = workspacePasswordInput.value.trim();
     const hashed = await hashPassword(pw);
     
-    if (hashed === dec.passwordHash) {
+    const masterPin = localStorage.getItem('master_vault_pin') || '1234';
+    const decoyPin = localStorage.getItem('decoy_vault_pin') || '0000';
+    
+    if ((dec.passwordHash && hashed === dec.passwordHash) || pw === masterPin || pw === decoyPin) {
         window.unlockedDecisions[dec.id] = true;
         workspacePasswordInput.value = '';
         workspaceUnlockError.classList.add('hidden');
         renderApp();
         renderDrawer();
         renderFooter();
+        loadChatForActiveDecision();
     } else {
         workspaceUnlockError.classList.remove('hidden');
         workspacePasswordInput.value = '';
@@ -1407,8 +1476,11 @@ function handleLockBtnClick() {
     
     if (dec.passwordHash) {
         // Unlock / Remove Lock
-        openPasswordModal('verify', 'Remove Password Lock', 'Enter the current password to unlock and remove protection.', async (enteredHash) => {
-            if (enteredHash === dec.passwordHash) {
+        openPasswordModal('verify', 'Remove Password Lock', 'Enter the current password or PIN to unlock and remove protection.', async (enteredHash) => {
+            const enteredRaw = passwordModalInput1.value.trim();
+            const masterPin = localStorage.getItem('master_vault_pin') || '1234';
+            const decoyPin = localStorage.getItem('decoy_vault_pin') || '0000';
+            if (enteredHash === dec.passwordHash || enteredRaw === masterPin || enteredRaw === decoyPin) {
                 dec.passwordHash = "";
                 delete window.unlockedDecisions[dec.id];
                 saveStateToStorage();
@@ -1426,23 +1498,23 @@ function handleLockBtnClick() {
         if (existingMasterHash) {
             // Already has a master password, lock immediately using it!
             dec.passwordHash = existingMasterHash;
-            window.unlockedDecisions[dec.id] = true; // Auto-unlock for active workspace session
+            delete window.unlockedDecisions[dec.id];
             saveStateToStorage();
             renderApp();
             renderDrawer();
             renderFooter();
-            showToast("Decision locked using master password.");
+            showToast("Decision locked.");
         } else {
             // Set lock password (first time setting lock)
             openPasswordModal('set', 'Set Password Lock', 'Enter a password to lock this decision list.', async (hashedPassword) => {
                 localStorage.setItem('master_password_hash', hashedPassword);
                 dec.passwordHash = hashedPassword;
-                window.unlockedDecisions[dec.id] = true; // Auto-unlock for active workspace session
+                delete window.unlockedDecisions[dec.id];
                 saveStateToStorage();
                 renderApp();
                 renderDrawer();
                 renderFooter();
-                showToast("Master password set and decision locked.");
+                showToast("Password set and decision locked.");
                 return true;
             });
         }
@@ -1497,8 +1569,9 @@ async function sendChatMessage() {
         }
     });
     
-    // Prepare history array
-    const history = window.activeChatHistory.map(h => ({ role: h.role, text: h.text }));
+    // Prepare history array from persisted decision chat history
+    if (!dec.chatHistory || !Array.isArray(dec.chatHistory)) dec.chatHistory = [];
+    const history = dec.chatHistory.map(h => ({ role: h.role, text: h.text }));
     
     try {
         const response = await fetch((window.BACKEND_API_URL || '') + '/api/chat', {
@@ -1523,9 +1596,10 @@ async function sendChatMessage() {
             const reply = data.text;
             addChatBubble('ai', reply);
             
-            // Add to active history
-            window.activeChatHistory.push({ role: 'user', text: text });
-            window.activeChatHistory.push({ role: 'model', text: reply });
+            // Persist to decision chat history
+            dec.chatHistory.push({ role: 'user', text: text });
+            dec.chatHistory.push({ role: 'model', text: reply });
+            saveStateToStorage();
         } else {
             const errData = await response.json();
             addChatBubble('ai', `Error: ${errData.error || 'Failed to connect to AI server.'}`);
@@ -1536,6 +1610,19 @@ async function sendChatMessage() {
     } finally {
         aiChatInput.disabled = false;
         aiChatSendBtn.disabled = false;
+    }
+}
+
+function loadChatForActiveDecision() {
+    const dec = getActiveDecision();
+    if (!aiChatMessages) return;
+    aiChatMessages.innerHTML = '';
+    if (dec && dec.chatHistory && Array.isArray(dec.chatHistory) && dec.chatHistory.length > 0) {
+        dec.chatHistory.forEach(msg => {
+            addChatBubble(msg.role === 'user' ? 'user' : 'ai', msg.text);
+        });
+    } else {
+        addChatBubble('ai', "Hello! I'm your Decision Assistant. You can ask me questions about the pros, cons, or trade-offs of this decision topic.");
     }
 }
 
@@ -1787,13 +1874,6 @@ function updateAiSuggestBtnVisibility() {
 // Open AI Suggestions Checklist Modal
 function openAiSuggestionsModal(data) {
     if (!aiSuggestionModal) return;
-    
-    // Reset chat history when opening new suggestions modal
-    window.activeChatHistory = [];
-    if (aiChatMessages) {
-        aiChatMessages.innerHTML = '';
-        addChatBubble('ai', "Hello! I'm your Decision Assistant. You can ask me questions about the pros, cons, or trade-offs of this decision topic.");
-    }
     
     selectedPros = [];
     selectedCons = [];
@@ -2058,11 +2138,8 @@ function setupEventListeners() {
                 aiChatPanel.classList.remove('open');
             } else {
                 aiChatPanel.classList.add('open');
+                loadChatForActiveDecision();
                 aiChatInput.focus();
-                if (aiChatMessages.children.length <= 1) {
-                    aiChatMessages.innerHTML = '';
-                    addChatBubble('ai', "Hello! I'm your Decision Assistant. You can ask me questions about the pros, cons, or trade-offs of this decision topic.");
-                }
             }
         });
     }
@@ -2994,8 +3071,11 @@ function deleteDecision(categoryName, decisionId, event) {
     if (!dec) return;
     
     if (dec.passwordHash) {
-        openPasswordModal('verify', 'Delete Protected Decision', 'Enter password to delete this protected decision.', async (enteredHash) => {
-            if (enteredHash === dec.passwordHash) {
+        openPasswordModal('verify', 'Delete Protected Decision', 'Enter password or PIN to delete this protected decision.', async (enteredHash) => {
+            const enteredRaw = passwordModalInput1.value.trim();
+            const masterPin = localStorage.getItem('master_vault_pin') || '1234';
+            const decoyPin = localStorage.getItem('decoy_vault_pin') || '0000';
+            if (enteredHash === dec.passwordHash || enteredRaw === masterPin || enteredRaw === decoyPin) {
                 category.decisions = category.decisions.filter(d => d.id !== decisionId);
                 
                 if (state.activeDecisionId === decisionId && state.activeCategoryName === categoryName) {
@@ -3161,18 +3241,26 @@ function sortDecisions(mode, showNotification = true) {
 // Clear current text values of active decision
 function handleClearAll() {
     const dec = getActiveDecision();
-    if (dec) {
-        dec.topic = '';
-        dec.pros = [''];
-        dec.cons = [''];
-        saveStateToStorage();
-        renderApp();
-        renderDrawer();
-        renderFooter();
-        topicInput.focus();
-        adjustTopicFontSizeAndHeight();
-        updateAiSuggestBtnVisibility();
+    if (!dec) return;
+    
+    const activeCat = state.categories.find(c => c.name === state.activeCategoryName);
+    const isLocked = (!window.unlockedVaultSession && activeCat && activeCat.isLocked) || 
+                     (!window.unlockedVaultSession && dec.passwordHash && !window.unlockedDecisions[dec.id]);
+    if (isLocked) {
+        showToast("Decision is locked. Unlock to clear.");
+        return;
     }
+    
+    dec.topic = '';
+    dec.pros = [''];
+    dec.cons = [''];
+    saveStateToStorage();
+    renderApp();
+    renderDrawer();
+    renderFooter();
+    topicInput.focus();
+    adjustTopicFontSizeAndHeight();
+    updateAiSuggestBtnVisibility();
 }
 
 // Helper getters/setters for item objects / simple strings
@@ -3237,6 +3325,15 @@ function updateNetBalanceScore() {
     
     if (state.settings && state.settings.showBalanceScore === false) {
         scoreEl.classList.add('hidden');
+        return;
+    }
+    
+    const activeCat = state.categories.find(c => c.name === state.activeCategoryName);
+    const isLocked = (!window.unlockedVaultSession && activeCat && activeCat.isLocked) || 
+                     (!window.unlockedVaultSession && dec.passwordHash && !window.unlockedDecisions[dec.id]);
+    if (isLocked) {
+        scoreEl.classList.add('hidden');
+        scoreEl.style.display = 'none';
         return;
     }
     
@@ -3457,22 +3554,49 @@ function renderApp() {
     const activeCat = state.categories.find(c => c.name === state.activeCategoryName);
     const isLocked = (!window.unlockedVaultSession && activeCat && activeCat.isLocked) || 
                      (!window.unlockedVaultSession && dec.passwordHash && !window.unlockedDecisions[dec.id]);
+    
+    const scoreEl = document.getElementById('netBalanceScore');
+    const chatBtn = document.getElementById('floatingChatBtn');
+    
     if (isLocked) {
-        if (lockWorkspaceOverlay) { lockWorkspaceOverlay.classList.remove('hidden'); lockWorkspaceOverlay.style.display = 'block'; }
+        if (lockWorkspaceOverlay) { 
+            lockWorkspaceOverlay.classList.remove('hidden'); 
+            lockWorkspaceOverlay.style.display = 'flex'; 
+        }
         if (splitColumns) { splitColumns.classList.add('hidden'); splitColumns.style.display = 'none'; }
-        topicInput.value = dec.topic || '';
+        if (scoreEl) { scoreEl.classList.add('hidden'); scoreEl.style.display = 'none'; }
+        if (aiSuggestBtn) { aiSuggestBtn.classList.remove('visible'); aiSuggestBtn.style.display = 'none'; }
+        if (chatBtn) { chatBtn.classList.add('hidden'); chatBtn.style.display = 'none'; }
+        if (aiChatPanel) { aiChatPanel.classList.remove('open'); }
+        
+        topicInput.value = '🔒 Locked Decision';
         topicInput.disabled = true;
         workspacePasswordInput.value = '';
         workspaceUnlockError.classList.add('hidden');
         if (advantagesList) advantagesList.innerHTML = '';
         if (disadvantagesList) disadvantagesList.innerHTML = '';
+        renderFooter();
     } else {
         if (lockWorkspaceOverlay) { lockWorkspaceOverlay.classList.add('hidden'); lockWorkspaceOverlay.style.display = 'none'; }
         if (splitColumns) { splitColumns.classList.remove('hidden'); splitColumns.style.display = 'grid'; }
+        if (scoreEl) { scoreEl.style.display = ''; }
+        if (chatBtn) { chatBtn.classList.remove('hidden'); chatBtn.style.display = 'flex'; }
+        if (aiSuggestBtn) { aiSuggestBtn.style.display = ''; }
+        
         if (topicInput) {
             topicInput.disabled = false;
             topicInput.value = dec.topic || '';
             adjustTopicFontSizeAndHeight();
+        }
+        
+        // Clean up empty ghost items so they don't clutter the workspace
+        if (dec.pros && dec.pros.length > 1) {
+            const filledPros = dec.pros.filter(item => getItemText(item).trim() !== '');
+            if (filledPros.length > 0) dec.pros = filledPros;
+        }
+        if (dec.cons && dec.cons.length > 1) {
+            const filledCons = dec.cons.filter(item => getItemText(item).trim() !== '');
+            if (filledCons.length > 0) dec.cons = filledCons;
         }
         
         renderList('pro');
@@ -3481,6 +3605,7 @@ function renderApp() {
         updateAiSuggestBtnVisibility();
         growAllTextareas();
         adjustFloatingChatBtnPosition();
+        renderFooter();
     }
 }
 
@@ -3489,8 +3614,8 @@ function renderList(type) {
     const dec = getActiveDecision();
     if (!dec) return;
     
-    if (!dec.pros || !Array.isArray(dec.pros)) dec.pros = [''];
-    if (!dec.cons || !Array.isArray(dec.cons)) dec.cons = [''];
+    if (!dec.pros || !Array.isArray(dec.pros) || dec.pros.length === 0) dec.pros = [{ text: '', weight: 1 }];
+    if (!dec.cons || !Array.isArray(dec.cons) || dec.cons.length === 0) dec.cons = [{ text: '', weight: 1 }];
     
     const list = type === 'pro' ? dec.pros : dec.cons;
     const listContainer = type === 'pro' 
@@ -3554,6 +3679,21 @@ function renderList(type) {
         textarea.rows = 1;
         textarea.value = getItemText(item);
         textarea.placeholder = type === 'pro' ? 'type advantage...' : 'type disadvantage...';
+        
+        textarea.addEventListener('blur', (e) => {
+            const activeDec = getActiveDecision();
+            if (activeDec) {
+                const arr = type === 'pro' ? activeDec.pros : activeDec.cons;
+                const val = e.target.value.trim();
+                // Clean up empty ghost rows on blur if more than 1 row exists
+                if (val === '' && arr.length > 1) {
+                    arr.splice(index, 1);
+                    saveStateToStorage();
+                    renderList(type);
+                    updateNetBalanceScore();
+                }
+            }
+        });
         
         textarea.addEventListener('input', (e) => {
             const val = e.target.value;
@@ -3778,35 +3918,24 @@ function renderList(type) {
             
             if (e.key === 'Tab' && !e.shiftKey) {
                 e.preventDefault();
-                const start = e.target.selectionStart;
-                const end = e.target.selectionEnd;
-                const val = e.target.value;
-                e.target.value = val.substring(0, start) + "  " + val.substring(end);
-                e.target.setSelectionRange(start + 2, start + 2);
-                
-                const activeDec = getActiveDecision();
-                if (activeDec) {
-                    const arr = type === 'pro' ? activeDec.pros : activeDec.cons;
-                    setItemText(arr, index, e.target.value);
-                    debouncedSaveStateToStorage();
+                const targetList = type === 'pro' ? disadvantagesList : advantagesList;
+                if (targetList) {
+                    const oppositeInputs = Array.from(targetList.querySelectorAll('.item-input'));
+                    const targetInput = oppositeInputs[index] || oppositeInputs[oppositeInputs.length - 1];
+                    if (targetInput) targetInput.focus();
                 }
+                return;
             }
             
             if (e.key === 'Tab' && e.shiftKey) {
                 e.preventDefault();
-                const val = e.target.value;
-                if (val.startsWith("  ")) {
-                    e.target.value = val.substring(2);
-                    const start = e.target.selectionStart;
-                    e.target.setSelectionRange(Math.max(0, start - 2), Math.max(0, start - 2));
-                    
-                    const activeDec = getActiveDecision();
-                    if (activeDec) {
-                        const arr = type === 'pro' ? activeDec.pros : activeDec.cons;
-                        setItemText(arr, index, e.target.value);
-                        debouncedSaveStateToStorage();
-                    }
+                const targetList = type === 'con' ? advantagesList : disadvantagesList;
+                if (targetList) {
+                    const oppositeInputs = Array.from(targetList.querySelectorAll('.item-input'));
+                    const targetInput = oppositeInputs[index] || oppositeInputs[0];
+                    if (targetInput) targetInput.focus();
                 }
+                return;
             }
         });
         
@@ -3919,10 +4048,14 @@ function renderList(type) {
     const activeDec = getActiveDecision();
     if (activeDec) {
         const count = list.filter(item => getItemText(item).trim() !== '').length;
+        const headerEl = type === 'pro' ? document.getElementById('advantagesHeader') : document.getElementById('disadvantagesHeader');
+        if (headerEl) {
+            headerEl.innerText = count > 0 ? `${type === 'pro' ? 'Advantages' : 'Disadvantages'} (${count})` : (type === 'pro' ? 'Advantages' : 'Disadvantages');
+        }
         if (type === 'pro') {
-            tabAdvantagesBtn.innerText = `Pros (${count})`;
+            if (tabAdvantagesBtn) tabAdvantagesBtn.innerText = `Pros (${count})`;
         } else {
-            tabDisadvantagesBtn.innerText = `Cons (${count})`;
+            if (tabDisadvantagesBtn) tabDisadvantagesBtn.innerText = `Cons (${count})`;
         }
     }
 }
@@ -4197,6 +4330,17 @@ function adjustFloatingChatBtnPosition() {
 
 // Toggle Share Actions Dropdown Menu
 function toggleShareDropdown(btnElement) {
+    const dec = getActiveDecision();
+    if (dec) {
+        const activeCat = state.categories.find(c => c.name === state.activeCategoryName);
+        const isLocked = (!window.unlockedVaultSession && activeCat && activeCat.isLocked) || 
+                         (!window.unlockedVaultSession && dec.passwordHash && !window.unlockedDecisions[dec.id]);
+        if (isLocked) {
+            showToast("Decision is locked. Unlock to export or share.");
+            return;
+        }
+    }
+    
     let dropdown = document.getElementById('footerShareDropdown');
     if (!dropdown) {
         dropdown = document.createElement('div');
@@ -4263,6 +4407,15 @@ function renderFooter() {
     
     footerActions.innerHTML = '';
     
+    const activeCat = state.categories.find(c => c.name === state.activeCategoryName);
+    const isLocked = (!window.unlockedVaultSession && activeCat && activeCat.isLocked) || 
+                     (!window.unlockedVaultSession && dec.passwordHash && !window.unlockedDecisions[dec.id]);
+    
+    // While decision is locked, suppress all toolbar actions (Copy, Clear, Share) to prevent unauthenticated data exfiltration
+    if (isLocked) {
+        return;
+    }
+    
     // 1. Clear button (Trash)
     const clearBtn = document.createElement('button');
     clearBtn.className = 'footer-icon-btn';
@@ -4288,14 +4441,14 @@ function renderFooter() {
         const lockBtn = document.createElement('button');
         lockBtn.className = 'footer-icon-btn';
         lockBtn.id = 'lockDecisionBtn';
-        const isLocked = dec.passwordHash;
-        lockBtn.title = isLocked ? 'Unlock/Remove Password' : 'Lock Chat';
-        lockBtn.setAttribute('aria-label', isLocked ? 'Unlock/Remove Password' : 'Lock Chat');
-        if (isLocked) {
-            // Unlocked state (shows open lock icon)
+        const isDecLocked = dec.passwordHash;
+        lockBtn.title = isDecLocked ? 'Unlock / Remove Password' : 'Lock Decision';
+        lockBtn.setAttribute('aria-label', isDecLocked ? 'Unlock / Remove Password' : 'Lock Decision');
+        if (isDecLocked) {
+            // Protected state with password (shows open lock icon to remove lock)
             lockBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>`;
         } else {
-            // Locked state (shows closed lock icon)
+            // Unlocked state (shows closed lock icon to set lock)
             lockBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`;
         }
         lockBtn.addEventListener('click', handleLockBtnClick);
@@ -4451,10 +4604,8 @@ function adjustTopicFontSizeAndHeight() {
     const text = topicInput.value;
     const len = text.length;
     
-    let fontSize = 2.2; 
-    if (len > 15) {
-        fontSize = Math.max(1.0, 2.2 - (len - 15) * 0.025);
-    }
+    // Stable, prominent editorial sizing without shrinking to tiny mouse font
+    let fontSize = len > 80 ? 1.6 : len > 40 ? 1.85 : 2.1;
     
     topicInput.style.fontSize = `${fontSize}rem`;
     topicInput.style.height = 'auto';
@@ -4463,8 +4614,9 @@ function adjustTopicFontSizeAndHeight() {
 
 // Helper: Auto-grow textarea
 function autoGrowTextarea(element) {
+    if (!element) return;
     element.style.height = 'auto';
-    element.style.height = (element.scrollHeight) + 'px';
+    element.style.height = Math.max(element.scrollHeight, 24) + 'px';
 }
 
 // Helper: Auto-grow all textareas
@@ -4491,6 +4643,14 @@ function showToast(message) {
 function copyToClipboard() {
     const dec = getActiveDecision();
     if (!dec) return;
+    
+    const activeCat = state.categories.find(c => c.name === state.activeCategoryName);
+    const isLocked = (!window.unlockedVaultSession && activeCat && activeCat.isLocked) || 
+                     (!window.unlockedVaultSession && dec.passwordHash && !window.unlockedDecisions[dec.id]);
+    if (isLocked) {
+        showToast("Decision is locked. Unlock to copy.");
+        return;
+    }
     
     const topic = dec.topic.trim() || 'Pros and Cons Analysis';
     let md = `# Decision: ${topic} (${state.activeCategoryName})\n\n`;

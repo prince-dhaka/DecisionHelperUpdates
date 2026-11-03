@@ -10,3 +10,8 @@ __pycache__/
 diagnostic_logs.txt
 stderr.txt
 stdout.txt
+secrets.json
+compilers/
+.agents/
+desktop.ini
+decision_helper_state*.json

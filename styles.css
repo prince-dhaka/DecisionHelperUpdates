@@ -25,12 +25,12 @@ body.clean-white {
     --toast-text: #ffffff;
     --help-bg: #ffffff;
     --btn-hover: #f5f5f5;
-    --adv-bg: rgba(46, 125, 50, 0.06);
-    --adv-border: rgba(46, 125, 50, 0.22);
-    --adv-title: #1b5e20;
-    --dis-bg: rgba(198, 40, 40, 0.06);
-    --dis-border: rgba(198, 40, 40, 0.22);
-    --dis-title: #b71c1c;
+    --adv-bg: transparent;
+    --adv-border: transparent;
+    --adv-title: #2e7d32;
+    --dis-bg: transparent;
+    --dis-border: transparent;
+    --dis-title: #c62828;
 }
 
 body.zen-dark {
@@ -46,11 +46,11 @@ body.zen-dark {
     --toast-text: #000000;
     --help-bg: #1e1e1e;
     --btn-hover: #2d2d2d;
-    --adv-bg: rgba(46, 125, 50, 0.14);
-    --adv-border: rgba(129, 199, 132, 0.3);
+    --adv-bg: transparent;
+    --adv-border: transparent;
     --adv-title: #81c784;
-    --dis-bg: rgba(198, 40, 40, 0.14);
-    --dis-border: rgba(229, 115, 115, 0.3);
+    --dis-bg: transparent;
+    --dis-border: transparent;
     --dis-title: #e57373;
 }
 
@@ -67,11 +67,11 @@ body.warm-sepia {
     --toast-text: #fdf6e3;
     --help-bg: #eee8d5;
     --btn-hover: #eee8d5;
-    --adv-bg: rgba(133, 153, 0, 0.1);
-    --adv-border: rgba(133, 153, 0, 0.3);
+    --adv-bg: transparent;
+    --adv-border: transparent;
     --adv-title: #859900;
-    --dis-bg: rgba(220, 50, 47, 0.1);
-    --dis-border: rgba(220, 50, 47, 0.3);
+    --dis-bg: transparent;
+    --dis-border: transparent;
     --dis-title: #dc322f;
 }
 
@@ -95,9 +95,9 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 60px 20px 40px 20px;
-    max-width: 1200px;
-    width: 100%;
+    padding: 40px 24px 40px 24px;
+    max-width: 1550px;
+    width: 94%;
     margin: 0 auto;
 }
 
@@ -819,13 +819,9 @@ body {
     background-color: #f0f0f0;
 }
 
-/* Focus Dimming Mode: dim the inactive column during typing */
-.split-columns:has(.column-advantages:focus-within) .column-disadvantages {
-    opacity: 0.35;
-}
-
-.split-columns:has(.column-disadvantages:focus-within) .column-advantages {
-    opacity: 0.35;
+/* Both columns maintain balanced legibility at all times */
+.split-columns .column {
+    opacity: 1;
 }
 
 .column {
@@ -962,27 +958,6 @@ body.warm-sepia .help-modal {
 
 .theme-cycle-btn svg {
     stroke: var(--text-color);
-}
-
-/* Empty State helpers inside columns (Zen design) */
-.items-list:empty::after,
-.items-list:not(:has(li))::after {
-    content: "No points listed yet.\aPress Enter or double-click here to write one.";
-    white-space: pre-wrap;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    font-size: 0.85rem;
-    line-height: 1.6;
-    color: var(--subtle-text);
-    opacity: 0.45;
-    padding: 30px 15px;
-    border: 1px dashed var(--border-color);
-    border-radius: 12px;
-    margin-top: 10px;
-    pointer-events: none;
-    transition: opacity 0.2s ease;
 }
 
 /* Sidebar Drawer search styles */
@@ -2380,74 +2355,78 @@ body.warm-sepia .ai-discuss-btn {
     border-color: var(--accent-color, #859900);
 }
 
-/* Workspace Lock Overlay */
+/* Workspace Lock Overlay - Perfectly Centered, Simple & Premium */
 .lock-workspace-overlay {
     display: flex;
     align-items: center;
     justify-content: center;
     width: 100%;
-    min-height: 300px;
-    padding: 40px 20px;
-    background-color: var(--bg-color);
+    min-height: 420px;
+    padding: 60px 24px;
+    margin: 20px auto;
+    background-color: transparent;
     animation: fadeIn 0.25s ease;
 }
 
 .lock-card {
     background-color: var(--card-bg, #ffffff);
     border: 1px solid var(--border-color);
-    border-radius: 16px;
-    padding: 32px;
-    max-width: 420px;
+    border-radius: 20px;
+    padding: 44px 36px;
+    max-width: 440px;
     width: 100%;
+    margin: 0 auto;
     text-align: center;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.05);
 }
 
 .lock-card-icon {
-    color: var(--accent-color, #0071e3);
-    margin-bottom: 20px;
+    color: var(--accent-color, #111111);
+    margin-bottom: 24px;
     display: inline-flex;
     justify-content: center;
     align-items: center;
     padding: 16px;
-    background-color: var(--hover-bg, #f5f5f7);
+    background-color: var(--hover-bg, #f4f4f4);
     border-radius: 50%;
 }
 
 .lock-card h3 {
-    font-size: 1.25rem;
-    font-weight: 600;
+    font-size: 1.35rem;
+    font-weight: 700;
     margin-bottom: 8px;
     color: var(--text-color);
+    letter-spacing: -0.01em;
 }
 
 .lock-card p {
-    font-size: 0.9rem;
+    font-size: 0.92rem;
     color: var(--subtle-text);
-    margin-bottom: 24px;
+    margin-bottom: 28px;
     line-height: 1.5;
 }
 
 .lock-card-input-row {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     margin-bottom: 12px;
 }
 
 .lock-card-input-row input {
     flex: 1;
-    padding: 10px 14px;
-    border-radius: 8px;
+    padding: 12px 16px;
+    border-radius: 10px;
     border: 1px solid var(--border-color);
-    font-size: 0.95rem;
+    font-size: 1rem;
     outline: none;
     background-color: var(--bg-color);
     color: var(--text-color);
-    transition: border-color 0.15s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .lock-card-input-row input:focus {
-    border-color: var(--accent-color, #0071e3);
+    border-color: var(--text-color);
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
 }
 
 .unlock-error-msg {
@@ -3376,8 +3355,6 @@ body.warm-sepia .ai-discuss-btn {
     transform: scale(0.92);
 }
 
-}
-
 .home-header {
     display: flex;
     align-items: center;
@@ -3389,165 +3366,24 @@ body.warm-sepia .ai-discuss-btn {
     z-index: 10;
 }
 
-}
-
 /* Global Hidden Utility Rule */
 .hidden {
     display: none !important;
 }
 
-/* App Layout & Workspace Section Styles */
-.app-layout {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    min-height: calc(100vh - 60px);
-    background: var(--bg-color);
-    color: var(--text-color);
-}
-
-.main-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 24px;
-    box-sizing: border-box;
-}
-
-.workspace {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    width: 100%;
-}
-
-.topic-container {
-    position: relative;
-    width: 100%;
-    margin-bottom: 12px;
-}
-
-.topic-container textarea {
-    width: 100%;
-    font-size: 1.6rem;
-    font-weight: 700;
-    border: none;
-    border-bottom: 2px solid var(--border-color);
-    background: transparent;
-    color: var(--text-color);
-    padding: 8px 0;
-    outline: none;
-    resize: none;
-    font-family: inherit;
-    transition: border-color 0.2s ease;
-}
-
-.topic-container textarea:focus {
-    border-bottom-color: var(--accent-color, #000);
-}
-
-.net-balance-score {
-    font-size: 1.05rem;
-    font-weight: 700;
-    padding: 10px 16px;
-    border-radius: 12px;
-    background: var(--input-bg);
-    border: 1px solid var(--border-color);
-    display: inline-block;
-    align-self: flex-start;
-    margin-bottom: 12px;
-}
-
-.split-columns {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 32px;
-    width: 100%;
-    position: relative;
-}
-
-@media (max-width: 768px) {
-    .split-columns {
-        grid-template-columns: 1fr;
-        gap: 24px;
-    }
-}
-
-.column {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.column-header h2 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    margin: 0;
-}
-
-.column-advantages .column-header h2 {
-    color: #2e7d32;
-}
-
-.column-disadvantages .column-header h2 {
-    color: #c62828;
-}
-
-.items-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.item-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px 12px;
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-    background: var(--input-bg);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.item-row:focus-within {
-    border-color: var(--accent-color, #000);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-.item-input {
-    flex: 1;
-    border: none;
-    background: transparent;
-    color: var(--text-color);
-    font-size: 1rem;
-    outline: none;
-    font-family: inherit;
-}
-
-}
-
-/* Enhanced High-Visibility Workspace Cards (Minimal, Clean & Premium) */
+/* Minimalist Plain Background Columns (Zero Clutter) */
 .column-advantages {
-    background: var(--adv-bg);
-    border: 1px solid var(--adv-border);
-    border-radius: 18px;
-    padding: 24px 20px;
-    transition: all 0.2s ease;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
 }
 
 .column-disadvantages {
-    background: var(--dis-bg);
-    border: 1px solid var(--dis-border);
-    border-radius: 18px;
-    padding: 24px 20px;
-    transition: all 0.2s ease;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
 }
 
 .column-advantages .column-header h2 {
@@ -3560,19 +3396,21 @@ body.warm-sepia .ai-discuss-btn {
 
 .item-row {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 10px;
-    padding: 12px 16px;
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-    background: var(--item-bg);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    padding: 6px 0;
+    border-radius: 4px;
+    border: none;
+    background: transparent;
+}
+
+.item-row:hover {
+    background: transparent;
 }
 
 .item-row:focus-within {
-    border-color: var(--text-color);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    background: transparent;
+    border: none;
 }
 
 .item-number {
@@ -3591,13 +3429,23 @@ body.warm-sepia .ai-discuss-btn {
     font-weight: 500;
     outline: none;
     font-family: inherit;
-    line-height: 1.4;
+    line-height: 1.5;
+    resize: none;
+    overflow-y: hidden;
+    height: auto;
+    min-height: 24px;
+    padding: 2px 0;
 }
 
 .item-input::placeholder {
     color: #aaaaaa;
     font-weight: 400;
     opacity: 0.85;
+}
+
+/* Explicit Add Advantage / Add Disadvantage Action Buttons - Hidden for distraction-free keyboard flow */
+.add-item-btn {
+    display: none !important;
 }
 
 .topic-container textarea {

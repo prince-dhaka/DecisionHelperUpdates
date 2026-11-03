@@ -340,7 +340,7 @@
     <!-- Click away overlay for dropdown -->
     <div id="menuOverlay" class="menu-overlay"></div>
 
-    <div class="app-layout">
+    <div class="app-layout hidden">
         <main class="main-content">
             <!-- Workspace Section -->
             <section class="workspace">
@@ -422,6 +422,13 @@
                         <ul class="items-list" id="advantagesList">
                             <!-- Dynamic Advantage Items -->
                         </ul>
+                        <button type="button" class="add-item-btn" id="addAdvantageBtn" style="display: none;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            <span>Add Advantage</span>
+                        </button>
                     </div>
 
                     <!-- Disadvantages Column -->
@@ -432,6 +439,13 @@
                         <ul class="items-list" id="disadvantagesList">
                             <!-- Dynamic Disadvantage Items -->
                         </ul>
+                        <button type="button" class="add-item-btn" id="addDisadvantageBtn" style="display: none;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            <span>Add Disadvantage</span>
+                        </button>
                     </div>
                 </div>
             </section>
@@ -633,6 +647,8 @@
                 <button id="passwordModalSubmitBtn" class="settings-btn-action">Confirm</button>
             </div>
         </div>
+    </div>
+
     <!-- Export Modal Dialog -->
     <div id="exportModal" class="help-modal hidden">
         <div class="help-content export-modal-content">
