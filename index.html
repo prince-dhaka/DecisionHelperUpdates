@@ -6,7 +6,7 @@
     <title>Pros & Cons Decision Helper</title>
     <link rel="icon" type="image/png" href="app_icon.png">
     <!-- Cache buster on CSS -->
-    <link rel="stylesheet" href="styles.css?v=22">
+    <link rel="stylesheet" href="styles.css?v=23">
 </head>
 <body class="clean-white">
     <div id="autosaveIndicator" class="autosave-indicator" title="All changes saved to disk">Saved</div>
@@ -367,14 +367,16 @@
 
                 <!-- Mobile Tabs Navigation (Visible only on mobile viewports) -->
                 <div id="mobileTabs" class="mobile-tabs-container">
-                    <button id="tabAdvantagesBtn" class="mobile-tab-btn active">Pros (0)</button>
-                    <button id="tabCompareBtn" class="mobile-tab-btn-compare" title="Compare Side-by-Side">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <div class="mobile-tabs-pill">
+                        <button id="tabAdvantagesBtn" class="mobile-tab-btn active" type="button">Pros (0)</button>
+                        <button id="tabDisadvantagesBtn" class="mobile-tab-btn" type="button">Cons (0)</button>
+                    </div>
+                    <button id="tabCompareBtn" class="mobile-tab-btn-compare" type="button" title="Compare Side-by-Side (Split View)" aria-label="Compare Side-by-Side">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="3" ry="3"></rect>
                             <line x1="12" y1="3" x2="12" y2="21"></line>
                         </svg>
                     </button>
-                    <button id="tabDisadvantagesBtn" class="mobile-tab-btn">Cons (0)</button>
                 </div>
 
                 <!-- Net Balance Score Badge -->
@@ -694,6 +696,6 @@
     </div>
 
     <!-- Cache buster on JavaScript -->
-    <script src="app.js?v=22"></script>
+    <script src="app.js?v=23"></script>
 </body>
 </html>

@@ -1553,11 +1553,14 @@ input:checked + .slider::before {
    ========================================================================== */
 .mobile-tabs-container {
     display: none; /* hidden on desktop */
-    width: 90%;
-    margin: 8px auto 16px auto;
-    background: var(--input-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 24px; /* Capsule roundness! */
+}
+
+.mobile-tabs-pill {
+    flex: 1;
+    display: flex;
+    background: var(--btn-hover, #f0f0f3);
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+    border-radius: 9999px;
     padding: 3px;
     box-sizing: border-box;
     align-items: center;
@@ -1574,7 +1577,7 @@ input:checked + .slider::before {
     padding: 7px 10px;
     cursor: pointer;
     border-radius: 9999px; /* Capsule roundness! */
-    transition: all 0.2s ease;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     text-align: center;
     white-space: nowrap;
     overflow: hidden;
@@ -1589,20 +1592,19 @@ input:checked + .slider::before {
 }
 
 .mobile-tab-btn-compare {
-    background: transparent;
-    border: none;
-    padding: 4px;
+    background: var(--btn-hover, #f0f0f3);
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+    padding: 0;
     cursor: pointer;
     color: var(--subtle-text);
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    transition: all 0.2s ease;
-    width: 28px;
-    height: 28px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    width: 34px;
+    height: 34px;
     flex-shrink: 0;
-    margin: 0; /* Minimal gap */
 }
 
 .mobile-tab-btn-compare:hover {
@@ -1613,6 +1615,7 @@ input:checked + .slider::before {
 .mobile-tab-btn-compare.active {
     background: var(--text-color);
     color: var(--bg-color) !important;
+    border-color: var(--text-color);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
@@ -1823,16 +1826,31 @@ body.dark-mode .horizon-tag-btn.long {
         position: sticky;
         top: 48px; /* Sticks just below the menu buttons */
         z-index: 999;
-        background: var(--input-bg, #f2f2f5);
-        width: 85%;
-        max-width: 280px;
-        margin: 10px auto 16px auto;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        width: 90%;
+        max-width: 320px;
+        margin: 10px auto 14px auto;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .mobile-tabs-pill {
+        flex: 1;
+        display: flex;
+        background: var(--btn-hover, #f0f0f3);
         border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
         border-radius: 9999px;
         padding: 3px;
         box-sizing: border-box;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         align-items: center;
+    }
+
+    .mobile-tab-btn-compare {
+        width: 36px;
+        height: 36px;
+        flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
 
     /* Mobile active column toggle logic */
