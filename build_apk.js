@@ -713,10 +713,10 @@ async function publishOtaUpdate() {
         const apkDownloadUrl = `https://github.com/${username}/${repo}/releases/download/v1.${versionCode}/DecisionHelper.apk`;
 
         const whatsNewList = [
+            "New official Apple-grade Pure Glass Convergence logo and launcher icon",
+            "Seamless borderless white canvas with refractive frosted glass ribbons",
             "Fixed card delete button on the home screen with instant in-app confirmation modal",
-            "New official Synthesis Prism app logo and launcher icon",
             "Redesigned mobile Pros & Cons segmented pill with dedicated side-by-side view button",
-            "Secured Vault lock screen with password reveal toggle and shake feedback",
             "Full Android WebChromeClient bridge for native alerts, confirms, and dialogs"
         ];
 

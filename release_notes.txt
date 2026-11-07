@@ -1,28 +1,25 @@
 ===================================================================
-DECISION HELPER - RELEASE NOTES (v1.16)
+DECISION HELPER - RELEASE NOTES (v1.17)
 ===================================================================
 
-[BUG FIXES & INTERFACE REFINEMENTS]
-1. Rock-Solid Decision Card Deletion:
+[NEW BRAND IDENTITY & LOGO REDESIGN]
+1. Official Apple-Grade Logo: "The Pure Glass Convergence":
+   - Seamless, borderless 100% pure white ground (#FFFFFF).
+   - Zero outer boxes, zero perimeter frames, zero artificial edge noise.
+   - Two frosted optical glass ribbons (sage-emerald Pro & warm amber-coral Con) unified by a floating titanium ring, ascending into a diamond crystal apex.
+   - Converted across all platforms: Android launcher (ic_launcher.png), Windows (.ico), and Web (app_icon.png, cover.jpg, folder.png/jpg).
+
+[PREVIOUS FIXES & ENHANCEMENTS]
+2. Rock-Solid Decision Card Deletion:
    - Fixed the trash can delete button on front home dashboard cards.
    - Replaced fragile browser confirm() popups with a dedicated in-app Confirmation Action Sheet.
-   - Guaranteed full compatibility with Android WebView, Chrome, Safari, and Desktop.
-   - Added automatic active decision state recovery to prevent blank screens or orphaned IDs upon deletion.
+   - Automatic active decision state recovery to prevent blank screens or orphaned IDs upon deletion.
 
-2. Android WebChromeClient Integration:
+3. Android WebChromeClient Integration:
    - Added native WebChromeClient dialog bridge in MainActivity.java to support system alert() and confirm() dialogs without silent drops.
-
-3. Official Synthesis Prism Logo & Icon Suite:
-   - Updated all application icons across Android launcher (ic_launcher.png), Windows (.ico), and Web (app_icon.png, cover.jpg, folder.png/jpg).
 
 4. Pure 50/50 Segmented Mobile Slider:
    - Cleaned up the mobile Pros/Cons toggle into a balanced capsule slider.
    - Converted the Compare / Split-view toggle into an independent, circular action button.
-   - Removed redundant subheadings on mobile when a single column is active.
-
-5. Ultra-Premium Private Vault Security:
-   - Password reveal eye toggle on unlock cards.
-   - Tactile horizontal shake animation on incorrect password entry.
-   - Complete metadata privacy mask hiding pros/cons counts while locked.
 
 ===================================================================

@@ -1,11 +1,11 @@
-[v1.16 Updates & Fixes]
+[v1.17 Updates & Fixes]
 
-[Fixed]
-- Front Decision Card Delete: Fixed the delete button on the home dashboard cards. Replaced blocked WebView confirm dialogs with an instant, ultra-premium in-app confirmation modal.
-- Active Decision State Recovery: Deleting an active decision now automatically switches to the next available decision or a clean draft, preventing blank screen issues.
-- Android WebView Dialog Bridge: Added WebChromeClient with native alert and confirm dialog support so system dialogs never fail on Android.
+[Brand & Visual Identity]
+- Official Apple-Grade Logo: Replaced with Master Concept "The Pure Glass Convergence". Built on a seamless, borderless 100% pure white ground featuring two frosted optical glass ribbons (sage-emerald Pro & warm amber-coral Con) converging into a crystalline diamond apex.
+- Clean Round Aesthetic: Zero frame boundaries, zero artificial borders, and smooth round curvature.
 
-[Improved]
-- Mobile Pros & Cons Switcher: Re-engineered into a pure 50/50 segmented capsule slider with an independent Compare (Split View) toggle button.
-- Official App Logo: Replaced legacy graphics with the official Synthesis Prism brand identity across Android launcher icons, Windows .ico, and web favicons.
-- Vault Security & Privacy: Shielded locked decisions to prevent item count and score leaking before unlocking, with password reveal eye toggle and tactile shake animation on wrong PIN.
+[Features & Performance]
+- Fixed Front Decision Card Delete: Replaced blocked WebView confirm dialogs with an instant, ultra-premium in-app confirmation modal.
+- Active Decision State Recovery: Deleting an active decision now automatically switches to the next available decision or clean draft.
+- Android WebView Dialog Bridge: Added WebChromeClient with native alert and confirm dialog support.
+- Mobile Pros & Cons Switcher: Pure 50/50 segmented capsule toggle with an independent side-by-side view button.
