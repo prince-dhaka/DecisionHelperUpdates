@@ -66,8 +66,12 @@ import android.os.Build;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.WebChromeClient;
+import android.webkit.JsResult;
 import android.webkit.JavascriptInterface;
 import android.view.Window;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -124,6 +128,44 @@ public class MainActivity extends Activity {
         
         webView.addJavascriptInterface(new UpdaterInterface(), "AndroidUpdater");
         webView.setWebViewClient(new WebViewClient());
+        webView.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onJsAlert(WebView view, String url, String message, final JsResult result) {
+                new AlertDialog.Builder(MainActivity.this)
+                    .setTitle("Decision Helper")
+                    .setMessage(message)
+                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            result.confirm();
+                        }
+                    })
+                    .setCancelable(false)
+                    .create()
+                    .show();
+                return true;
+            }
+
+            @Override
+            public boolean onJsConfirm(WebView view, String url, String message, final JsResult result) {
+                new AlertDialog.Builder(MainActivity.this)
+                    .setTitle("Decision Helper")
+                    .setMessage(message)
+                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            result.confirm();
+                        }
+                    })
+                    .setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            result.cancel();
+                        }
+                    })
+                    .setCancelable(false)
+                    .create()
+                    .show();
+                return true;
+            }
+        });
         
         String url = "file:///android_asset/www/index.html";
         if (savedInstanceState == null) {
@@ -671,11 +713,11 @@ async function publishOtaUpdate() {
         const apkDownloadUrl = `https://github.com/${username}/${repo}/releases/download/v1.${versionCode}/DecisionHelper.apk`;
 
         const whatsNewList = [
-            "Fixed mobile title text wrapping and multi-line breaks",
-            "Clean mobile header hierarchy and balanced spacing",
-            "Floating AI chat bubble repositioned above bottom footer",
-            "Unified Advantages and Disadvantages terminology across tabs",
-            "Persistent chat history and secured locked private vault"
+            "Fixed card delete button on the home screen with instant in-app confirmation modal",
+            "New official Synthesis Prism app logo and launcher icon",
+            "Redesigned mobile Pros & Cons segmented pill with dedicated side-by-side view button",
+            "Secured Vault lock screen with password reveal toggle and shake feedback",
+            "Full Android WebChromeClient bridge for native alerts, confirms, and dialogs"
         ];
 
         const gistPayload = JSON.stringify({

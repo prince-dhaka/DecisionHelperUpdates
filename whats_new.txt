@@ -1,9 +1,11 @@
-[Added]
-- Clean Default Areas: Start fresh with empty "Career", "Relationships", and "Health" folders that you can customize, rename, or delete freely.
-- Premium Actions Bar: Added a sleek, premium bottom bar on mobile screens that responds to your touch and navigation.
-- Dedicated AI Suggestion Features: Added a float chat button (💬) for interactive chat with AI, and a point suggestion sparkles button (✨) for generating specific pros and cons points.
+[v1.16 Updates & Fixes]
 
-[Fixed & Improved]
-- Privacy Lock Screen Fix: Fixed a security bug where locked decisions could leak text when scrolling. Locked folders now completely scrub and hide all Pros and Cons content from the screen.
-- Dark Mode Icon Visibility: Fixed a bug where the menu (☰) and settings (⚙) icons became black and invisible in Zen Dark mode.
-- Contrast Tweaks: Fixed the Compare tab active button style in dark mode for clean contrast.
+[Fixed]
+- Front Decision Card Delete: Fixed the delete button on the home dashboard cards. Replaced blocked WebView confirm dialogs with an instant, ultra-premium in-app confirmation modal.
+- Active Decision State Recovery: Deleting an active decision now automatically switches to the next available decision or a clean draft, preventing blank screen issues.
+- Android WebView Dialog Bridge: Added WebChromeClient with native alert and confirm dialog support so system dialogs never fail on Android.
+
+[Improved]
+- Mobile Pros & Cons Switcher: Re-engineered into a pure 50/50 segmented capsule slider with an independent Compare (Split View) toggle button.
+- Official App Logo: Replaced legacy graphics with the official Synthesis Prism brand identity across Android launcher icons, Windows .ico, and web favicons.
+- Vault Security & Privacy: Shielded locked decisions to prevent item count and score leaking before unlocking, with password reveal eye toggle and tactile shake animation on wrong PIN.

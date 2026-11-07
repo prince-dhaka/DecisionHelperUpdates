@@ -1,29 +1,28 @@
 ===================================================================
-DECISION HELPER - RELEASE NOTES (v2.4.0)
+DECISION HELPER - RELEASE NOTES (v1.16)
 ===================================================================
 
-[NEW FEATURES & IMPROVEMENTS]
-1. Edit Area Full Modal Sheet:
-   - Tap "Edit / Rename" on any category pill to open the full Edit Area sheet.
-   - Customized Emoji Badges: Add emoji icons (💼, ❤️, 🏃, 💰, ✈️, 🏠, 🎯, 📚) to category pills.
-   - Decision Sorting Rules: Choose custom sorting (By Score, By Date, A-Z) per category.
-   - Bulk Decision Re-assignment: Move decisions into categories with simple checkboxes.
+[BUG FIXES & INTERFACE REFINEMENTS]
+1. Rock-Solid Decision Card Deletion:
+   - Fixed the trash can delete button on front home dashboard cards.
+   - Replaced fragile browser confirm() popups with a dedicated in-app Confirmation Action Sheet.
+   - Guaranteed full compatibility with Android WebView, Chrome, Safari, and Desktop.
+   - Added automatic active decision state recovery to prevent blank screens or orphaned IDs upon deletion.
 
-2. WhatsApp-Style Category Context Menu & Reorder Lists Modal:
-   - Long-press / right-click category pills for Edit, Delete, or Reorder options.
-   - Reorder Lists bottom sheet with drag handles, move up/down arrows, and green Add preset pills.
+2. Android WebChromeClient Integration:
+   - Added native WebChromeClient dialog bridge in MainActivity.java to support system alert() and confirm() dialogs without silent drops.
 
-[BUG FIXES & PERMANENT STABILITY]
-1. Fixed Category Resurrection Bug:
-   - Deleted and renamed categories stay permanently saved across page reloads.
+3. Official Synthesis Prism Logo & Icon Suite:
+   - Updated all application icons across Android launcher (ic_launcher.png), Windows (.ico), and Web (app_icon.png, cover.jpg, folder.png/jpg).
 
-2. Fixed Settings Dropdown Positioning:
-   - Fixed Settings gear dropdown position (`right: 16px; top: 60px; z-index: 9999`) across Home View, Workspace View, Mobile, and Desktop.
+4. Pure 50/50 Segmented Mobile Slider:
+   - Cleaned up the mobile Pros/Cons toggle into a balanced capsule slider.
+   - Converted the Compare / Split-view toggle into an independent, circular action button.
+   - Removed redundant subheadings on mobile when a single column is active.
 
-3. Fixed Decision Trash Can Button:
-   - Isolated direct click handlers so clicking 🗑️ on decision cards deletes decisions without triggering card navigation.
-
-4. Un-nested Edit Area Modal:
-   - Moved Edit Area modal to top-level HTML body so it opens reliably on all browsers.
+5. Ultra-Premium Private Vault Security:
+   - Password reveal eye toggle on unlock cards.
+   - Tactile horizontal shake animation on incorrect password entry.
+   - Complete metadata privacy mask hiding pros/cons counts while locked.
 
 ===================================================================

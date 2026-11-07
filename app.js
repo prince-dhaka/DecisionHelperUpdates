@@ -156,6 +156,15 @@ const remindLaterBtn = document.getElementById('remindLaterBtn');
 const updateNowBtn = document.getElementById('updateNowBtn');
 const UPDATE_CHECK_URL = 'https://gist.githubusercontent.com/prince-dhaka/1dc7a48696fee7dea5b91ea6c0cfa787/raw/gistfile1.txt';
 
+// Confirm Delete Modal DOM Elements
+const confirmDeleteModal = document.getElementById('confirmDeleteModal');
+const confirmDeleteTitle = document.getElementById('confirmDeleteTitle');
+const confirmDeleteMessage = document.getElementById('confirmDeleteMessage');
+const closeConfirmDeleteBtn = document.getElementById('closeConfirmDeleteBtn');
+const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+const executeDeleteBtn = document.getElementById('executeDeleteBtn');
+let pendingConfirmAction = null;
+
 // AI Suggestions DOM Elements
 const aiSuggestBtn = document.getElementById('aiSuggestBtn');
 const aiSuggestedPros = document.getElementById('aiSuggestedPros');
@@ -840,15 +849,16 @@ function renderHomeScreen() {
             deleteBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 e.preventDefault();
-                if (confirm(`Delete decision "${dec.topic || 'Untitled Decision'}"?`)) {
-                    const catIndex = state.categories.findIndex(c => c.name === item.areaName);
-                    if (catIndex !== -1) {
-                        state.categories[catIndex].decisions = state.categories[catIndex].decisions.filter(d => d.id !== dec.id);
-                        saveStateToStorage();
-                        renderHomeScreen();
-                        renderDrawer();
+                const decTitle = (dec.topic || '').trim() || 'Untitled Decision';
+                showConfirmModal({
+                    title: 'Delete Decision?',
+                    message: `Are you sure you want to delete "${decTitle}"? This action cannot be undone.`,
+                    confirmText: 'Delete Decision',
+                    confirmDanger: true,
+                    onConfirm: () => {
+                        performDeleteDecision(item.areaName, dec.id);
                     }
-                }
+                });
             });
         }
 
@@ -1147,12 +1157,16 @@ function deleteCategoryArea(catName) {
     const targetCat = catName || selectedCtxCategoryName;
     closeCategoryContextMenu();
     if (!targetCat || targetCat === 'All' || targetCat === 'Drafts') {
-        alert('Cannot delete system category.');
+        showToast('The Drafts system area cannot be deleted.');
         return;
     }
 
-    setTimeout(() => {
-        if (confirm(`Delete area "${targetCat}"? Decisions inside will be moved to Drafts.`)) {
+    showConfirmModal({
+        title: `Delete Area "${targetCat}"?`,
+        message: 'Decisions inside this area will be safely moved to Drafts.',
+        confirmText: 'Delete Area',
+        confirmDanger: true,
+        onConfirm: () => {
             const catIndex = state.categories.findIndex(c => c.name === targetCat);
             if (catIndex !== -1) {
                 const decisionsToMove = state.categories[catIndex].decisions || [];
@@ -1170,9 +1184,12 @@ function deleteCategoryArea(catName) {
                 saveStateToStorage();
                 renderHomeScreen();
                 renderDrawer();
+                renderApp();
+                renderFooter();
+                showToast(`Area "${targetCat}" deleted.`);
             }
         }
-    }, 50);
+    });
 }
 
 function openReorderListsModal() {
@@ -2329,6 +2346,22 @@ function setupEventListeners() {
         });
     }
 
+    // Confirm Delete Modal event bindings
+    if (closeConfirmDeleteBtn) closeConfirmDeleteBtn.addEventListener('click', closeConfirmModal);
+    if (cancelDeleteBtn) cancelDeleteBtn.addEventListener('click', closeConfirmModal);
+    if (confirmDeleteModal) {
+        confirmDeleteModal.addEventListener('click', (e) => {
+            if (e.target === confirmDeleteModal) closeConfirmModal();
+        });
+    }
+    if (executeDeleteBtn) {
+        executeDeleteBtn.addEventListener('click', () => {
+            const action = pendingConfirmAction;
+            closeConfirmModal();
+            if (action) action();
+        });
+    }
+
     // Analytics Modal triggers
     const netBalanceScore = document.getElementById('netBalanceScore');
     if (netBalanceScore) {
@@ -3155,6 +3188,101 @@ function selectDecision(categoryName, decisionId) {
     renderFooter();
 }
 
+// Universal In-App Confirmation Modal
+function showConfirmModal({ title, message, confirmText = 'Delete', confirmDanger = true, onConfirm }) {
+    if (!confirmDeleteModal) {
+        if (confirm(`${title}\n\n${message}`)) {
+            if (onConfirm) onConfirm();
+        }
+        return;
+    }
+    
+    if (confirmDeleteTitle) confirmDeleteTitle.innerText = title || 'Delete?';
+    if (confirmDeleteMessage) confirmDeleteMessage.innerText = message || 'Are you sure? This cannot be undone.';
+    if (executeDeleteBtn) {
+        executeDeleteBtn.innerText = confirmText;
+        if (confirmDanger) {
+            executeDeleteBtn.className = 'settings-btn-action delete-confirm-btn';
+        } else {
+            executeDeleteBtn.className = 'settings-btn-action';
+        }
+    }
+    
+    pendingConfirmAction = onConfirm;
+    confirmDeleteModal.classList.remove('hidden');
+}
+
+function closeConfirmModal() {
+    if (confirmDeleteModal) {
+        confirmDeleteModal.classList.add('hidden');
+    }
+    pendingConfirmAction = null;
+}
+
+// Perform Decision Deletion (handles password check if protected)
+function performDeleteDecision(categoryName, decisionId) {
+    const category = state.categories.find(c => c.name === categoryName);
+    if (!category) return;
+    
+    const dec = category.decisions.find(d => d.id === decisionId);
+    if (!dec) return;
+    
+    if (dec.passwordHash && !window.unlockedVaultSession && !window.unlockedDecisions[dec.id]) {
+        openPasswordModal('verify', 'Delete Protected Decision', 'Enter password or PIN to delete this protected decision.', async (enteredHash) => {
+            const enteredRaw = passwordModalInput1 ? passwordModalInput1.value.trim() : '';
+            const masterPin = localStorage.getItem('master_vault_pin') || '1234';
+            const decoyPin = localStorage.getItem('decoy_vault_pin') || '0000';
+            if (enteredHash === dec.passwordHash || enteredRaw === masterPin || enteredRaw === decoyPin) {
+                executeDecisionRemoval(category, decisionId);
+                return true;
+            } else {
+                return false;
+            }
+        });
+        return;
+    }
+    
+    executeDecisionRemoval(category, decisionId);
+}
+
+// Low-level removal, state reconciliation, and rendering
+function executeDecisionRemoval(category, decisionId) {
+    category.decisions = category.decisions.filter(d => d.id !== decisionId);
+    if (window.unlockedDecisions) {
+        delete window.unlockedDecisions[decisionId];
+    }
+    
+    if (state.activeDecisionId === decisionId) {
+        let foundNewActive = false;
+        for (let cat of state.categories) {
+            if (cat.decisions && cat.decisions.length > 0) {
+                state.activeCategoryName = cat.name;
+                state.activeDecisionId = cat.decisions[0].id;
+                foundNewActive = true;
+                break;
+            }
+        }
+        if (!foundNewActive) {
+            let drafts = state.categories.find(c => c.name === 'Drafts');
+            if (!drafts) {
+                drafts = { name: 'Drafts', decisions: [] };
+                state.categories.unshift(drafts);
+            }
+            const newId = 'dec_draft_' + Date.now();
+            drafts.decisions = [{ id: newId, topic: '', pros: [''], cons: [''] }];
+            state.activeCategoryName = drafts.name;
+            state.activeDecisionId = newId;
+        }
+    }
+    
+    saveStateToStorage();
+    renderHomeScreen();
+    renderDrawer();
+    renderApp();
+    renderFooter();
+    showToast("Decision deleted successfully.");
+}
+
 // Delete a decision
 function deleteDecision(categoryName, decisionId, event) {
     if (event) event.stopPropagation();
@@ -3165,100 +3293,16 @@ function deleteDecision(categoryName, decisionId, event) {
     const dec = category.decisions.find(d => d.id === decisionId);
     if (!dec) return;
     
-    if (dec.passwordHash) {
-        openPasswordModal('verify', 'Delete Protected Decision', 'Enter password or PIN to delete this protected decision.', async (enteredHash) => {
-            const enteredRaw = passwordModalInput1.value.trim();
-            const masterPin = localStorage.getItem('master_vault_pin') || '1234';
-            const decoyPin = localStorage.getItem('decoy_vault_pin') || '0000';
-            if (enteredHash === dec.passwordHash || enteredRaw === masterPin || enteredRaw === decoyPin) {
-                category.decisions = category.decisions.filter(d => d.id !== decisionId);
-                
-                if (state.activeDecisionId === decisionId && state.activeCategoryName === categoryName) {
-                    let foundNewActive = false;
-                    for (let cat of state.categories) {
-                        if (cat.decisions.length > 0) {
-                            state.activeCategoryName = cat.name;
-                            state.activeDecisionId = cat.decisions[0].id;
-                            foundNewActive = true;
-                            break;
-                        }
-                    }
-                    if (!foundNewActive) {
-                        const drafts = state.categories.find(c => c.name === 'Drafts') || state.categories[0];
-                        const newId = 'dec_draft_' + Date.now();
-                        drafts.decisions = [{ id: newId, topic: '', pros: [''], cons: [''] }];
-                        state.activeCategoryName = drafts.name;
-                        state.activeDecisionId = newId;
-                    }
-                }
-                
-                saveStateToStorage();
-                renderApp();
-                renderDrawer();
-                renderFooter();
-                showToast("Decision deleted successfully.");
-                return true;
-            } else {
-                return false;
-            }
-        });
-        return;
-    }
-    
-    category.decisions = category.decisions.filter(d => d.id !== decisionId);
-    
-    if (state.activeDecisionId === decisionId && state.activeCategoryName === categoryName) {
-        let foundNewActive = false;
-        for (let cat of state.categories) {
-            if (cat.decisions.length > 0) {
-                state.activeCategoryName = cat.name;
-                state.activeDecisionId = cat.decisions[0].id;
-                foundNewActive = true;
-                break;
-            }
+    const decTitle = (dec.topic || '').trim() || 'Untitled Decision';
+    showConfirmModal({
+        title: 'Delete Decision?',
+        message: `Are you sure you want to delete "${decTitle}"? This action cannot be undone.`,
+        confirmText: 'Delete Decision',
+        confirmDanger: true,
+        onConfirm: () => {
+            performDeleteDecision(categoryName, decisionId);
         }
-        
-        if (!foundNewActive) {
-            const drafts = state.categories.find(c => c.name === 'Drafts') || state.categories[0];
-            const newId = 'dec_draft_' + Date.now();
-            drafts.decisions = [{ id: newId, topic: '', pros: [''], cons: [''] }];
-            state.activeCategoryName = drafts.name;
-            state.activeDecisionId = newId;
-        }
-    }
-    
-    saveStateToStorage();
-    renderApp();
-    renderDrawer();
-    renderFooter();
-}
-
-// Delete an entire category area
-function deleteCategoryArea(categoryName, event) {
-    if (event) event.stopPropagation();
-    
-    if (categoryName === 'Drafts') {
-        alert('The Drafts area cannot be deleted.');
-        return;
-    }
-    
-    state.categories = state.categories.filter(c => c.name !== categoryName);
-    
-    if (state.activeCategoryName === categoryName) {
-        state.activeCategoryName = state.categories[0].name;
-        if (state.categories[0].decisions.length > 0) {
-            state.activeDecisionId = state.categories[0].decisions[0].id;
-        } else {
-            const newId = 'dec_' + Date.now();
-            state.categories[0].decisions.push({ id: newId, topic: '', pros: [''], cons: [''] });
-            state.activeDecisionId = newId;
-        }
-    }
-    
-    saveStateToStorage();
-    renderApp();
-    renderDrawer();
-    renderFooter();
+    });
 }
 
 // Rename a category area
